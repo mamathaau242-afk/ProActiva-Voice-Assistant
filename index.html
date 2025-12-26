@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ProActiva Voice Assistant</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      transition: background-image 1s ease-in-out;
+    }
+
+    .container {
+      background-color: rgba(255, 255, 255, 0.2);
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+      padding: 20px;
+      border-radius: 8px;
+      text-align: center;
+      width: 60%;
+      max-width: 400px;
+      position: relative;
+      backdrop-filter: blur(10px);
+      transition: background-color 0.3s ease, color 0.3s ease;
+    }
+
+    button {
+      background-color: #3a529a;
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 16px;
+      margin-top: 20px;
+      transition: background-color 0.3s ease;
+    }
+
+    button:hover {
+      background-color: #103d69;
+    }
+
+    #redirect-btn {
+      background-color: rgb(194, 54, 70);
+      display: none;
+    }
+
+    #redirect-btn:hover {
+      background-color: rgb(160, 28, 28);
+    }
+
+    #start-btn.listening {
+      animation: pulse-btn 1s infinite;
+    }
+
+    @keyframes pulse-btn {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+      100% { transform: scale(1); }
+    }
+
+    p {
+      margin-top: 15px;
+      font-size: 18px;
+    }
+
+    .footer {
+      position: absolute;
+      bottom: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      text-align: center;
+      font-size: 11px;
+      color: #ffffff;
+      margin: 0;
+      padding-top: 2px;
+    }
+
+    #history {
+      margin-top: 20px;
+      text-align: left;
+      font-size: 14px;
+      max-height: 150px;
+      overflow-y: auto;
+      border-top: 1px solid #eee;
+      padding-top: 10px;
+      color: rgb(0, 0, 0);
+    }
+
+    #download-history-btn {
+      background-color: #c74184;
+      color: white;
+      padding: 8px 16px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+
+    #download-history-btn:hover {
+      background-color: #961b5f;
+    }
+
+    #container-theme-toggle {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background-color: #333;
+      color: #fff;
+      border: none;
+      border-radius: 50%;
+      width: 15px;
+      height: 15px;
+      padding: 0;
+      font-size: 16px;
+      cursor: pointer;
+      z-index: 10;
+    }
+
+    #container-theme-toggle:hover {
+      background-color: #555;
+    }
+
+    .container.dark-theme {
+      background-color: rgba(30, 30, 30, 0.8);
+      box-shadow: 0 8px 16px rgba(255, 255, 255, 0.1);
+      color: #f0f0f0;
+    }
+
+    .container.dark-theme p,
+    .container.dark-theme #history,
+    .container.dark-theme .footer {
+      color: #f0f0f0;
+    }
+
+    .container.dark-theme button:not(#container-theme-toggle) {
+      background-color: #444;
+      color: #fff;
+    }
+
+    .container.dark-theme button:not(#container-theme-toggle):hover {
+      background-color: #666;
+    }
+
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1 style="color: #fbe8ed;">ProActiva Voice Assistant</h1>
+    <button id="start-btn">Start Listening</button>
+    <button id="redirect-btn">Go to Website</button>
+    <button id="download-history-btn">Download History</button>
+    <button id="container-theme-toggle" title="Toggle Theme">🌓</button>
+    <p id="user-input" style="color: white;">User: </p>
+    <p id="assistant-output" style="color: white;">Assistant: </p>
+    <div id="history"></div>
+    <div class="footer">Made with HTML, CSS, JS & SQL</div>
+  </div>
+
+  <script>
+    const startBtn = document.getElementById('start-btn');
+    const redirectBtn = document.getElementById('redirect-btn');
+    const userInput = document.getElementById('user-input');
+    const assistantOutput = document.getElementById('assistant-output');
+    const historyPanel = document.getElementById('history');
+    const downloadHistoryBtn = document.getElementById('download-history-btn');
+    const containerToggleBtn = document.getElementById('container-theme-toggle');
+    const container = document.querySelector('.container');
+
+    containerToggleBtn.addEventListener('click', () => {
+      container.classList.toggle('dark-theme');
+    });
+
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const SpeechSynthesis = window.speechSynthesis;
+    let pendingRedirect = null;
+
+    const backgrounds = [
+      'images/future-bg.jpg','images/bg1.jpg','images/bg2.jpeg','images/bg3.jpg',
+      'images/bg4.jpg','images/bg5.jpg','images/bg6.jpg','images/bg7.jpg','images/bg8.jpg',
+      'images/bg9.jpg','images/bg10.jpg','images/bg11.jpg','images/bg12.jpg','images/bg13.jpg',
+      'images/bg14.jpg','images/bg15.jpg','images/bg16.jpg','images/bg17.jpg','images/bg18.jpg', 
+      'images/bg19.jpeg', 'images/bg20.jpg'
+    ];
+    let bgIndex = 0;
+    function changeBackground() {
+      bgIndex = (bgIndex + 1) % backgrounds.length;
+      document.body.style.backgroundImage = `url('${backgrounds[bgIndex]}')`;
+    }
+    setInterval(changeBackground, 5000);
+    document.body.style.backgroundImage = `url('${backgrounds[bgIndex]}')`;
+
+    const interactionHistory = [];
+
+    if (SpeechRecognition && SpeechSynthesis) {
+      const recognition = new SpeechRecognition();
+      recognition.lang = 'en-US';
+      recognition.interimResults = false;
+
+      startBtn.addEventListener('click', () => {
+        recognition.start();
+        startBtn.classList.add('listening');
+        userInput.textContent = 'User: Listening...';
+        assistantOutput.textContent = 'Assistant: ';
+        redirectBtn.style.display = 'none';
+        pendingRedirect = null;
+      });
+
+      recognition.onresult = (event) => {
+        startBtn.classList.remove('listening');
+        const transcript = event.results[0][0].transcript;
+        userInput.textContent = `User: ${transcript}`;
+        processCommand(transcript);
+      };
+
+      recognition.onerror = () => {
+        startBtn.classList.remove('listening');
+        userInput.textContent = 'User: Error during recognition.';
+        speak('Sorry, I couldn’t catch that. Please try again.');
+      };
+
+      function speak(text) {
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = 'en-US';
+        SpeechSynthesis.speak(utterance);
+        assistantOutput.textContent = `Assistant: ${text}`;
+      }
+
+      function logHistory(user, assistant) {
+        const timestamp = new Date().toLocaleString();
+        const entry = `[${timestamp}] User: ${user} → Assistant: ${assistant}`;
+        interactionHistory.push(entry);
+        const p = document.createElement('p');
+        p.textContent = entry;
+        historyPanel.appendChild(p);
+      }
+
+      downloadHistoryBtn.addEventListener('click', () => {
+        if (interactionHistory.length === 0) {
+          alert('No history available to download yet!');
+          return;
+        }
+        const textData = interactionHistory.slice(-20).join('\n');
+        const blob = new Blob([textData], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'VoiceAssistant_History.txt';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      });
+
+      const siteMap = {
+        instagram: 'https://www.instagram.com',
+        whatsapp: 'https://web.whatsapp.com',
+        snapchat: 'https://www.snapchat.com',
+        twitter: 'https://www.twitter.com',
+        facebook: 'https://www.facebook.com',
+        myntra: 'https://www.myntra.com',
+        flipkart: 'https://www.flipkart.com',
+        amazon: 'https://www.amazon.in',
+        chatgpt: 'https://chat.openai.com',
+        google: 'https://www.google.com',
+        youtube: 'https://www.youtube.com',
+        hotstar: 'https://www.hotstar.com',
+        netflix: 'https://www.netflix.com',
+        swiggy: 'https://www.swiggy.com',
+        zomato: 'https://www.zomato.com',
+        bookmyshow: 'https://www.bookmyshow.com',
+        spotify: 'https://open.spotify.com',
+        bing: 'https://www.bing.com',
+        github: 'https://github.com',
+        linkedin: 'https://www.linkedin.com',
+        paytm: 'https://paytm.com',
+        irctc: 'https://www.irctc.co.in',
+        nykaa: 'https://www.nykaafashion.com',
+        zoom: 'https://zoom.us',
+        y8: 'https://www.y8.com',
+        canva: 'https://www.canva.com',
+        pv: 'https://www.primevideo.com',
+        gaana: 'https://www.gaana.com',
+        z5: 'https://www.zee5.com'
+      };
+
+      function processCommand(command) {
+        const lower = command.toLowerCase().trim();
+        pendingRedirect = null;
+        let response = '';
+
+        if (lower.includes('say the alphabet')) {
+          response = 'Here we go! A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z!';
+        } else if (lower.includes('say numbers')) {
+          response = 'Here we go! 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20...!';
+        } else if (lower.includes('humpty dumpty')) {
+          response = `Humpty Dumpty sat on a wall,
+Humpty Dumpty had a great fall.
+All the king’s horses and all the king’s men
+Couldn’t put Humpty together again.`;
+        } 
+        // NEW: send WhatsApp message
+        else if (lower.includes('send message to')) {
+          const match = lower.match(/send message to (.+?) saying (.+)/);
+          if (match) {
+            const name = match[1];
+            const message = match[2];
+            const encodedMsg = encodeURIComponent(`Hi ${name}, ${message}`);
+            pendingRedirect = `https://wa.me/?text=${encodedMsg}`;
+            response = `Opening WhatsApp to send message to ${name}.`;
+            redirectBtn.style.display = 'inline-block';
+          } else {
+            response = 'Please say "send message to [name] saying [your message]".';
+          }
+        } 
+        // optional email
+        else if (lower.includes('send e-mail to')) {
+          const match = lower.match(/send e-mail to (.+?) saying (.+)/);
+          if (match) {
+            const name = match[1].replace(/\s/g, '');
+            const message = match[2];
+            pendingRedirect = `mailto:${name}@gmail.com?subject=Message from ProActiva&body=${encodeURIComponent(message)}`;
+            response = `Opening email draft for ${name}.`;
+            redirectBtn.style.display = 'inline-block';
+          } else {
+            response = 'Please say "send email to [name] saying [your message]".';
+          }
+        }
+        else if (lower.includes('say something funny')) {
+          response = 'Why did the computer go to therapy? It had too many bytes of emotional baggage!';
+        } else if (lower.includes('search for')) {
+          const query = lower.replace('search for', '').trim();
+          pendingRedirect = `https://www.google.com/search?q=${encodeURIComponent(query)}`;
+          response = `Searching Google for ${query}.`;
+          redirectBtn.style.display = 'inline-block';
+        } else if (lower.includes('tell me time')) {
+          response = `The time is ${new Date().toLocaleTimeString()}.`;
+        } else if (lower.includes('tell me date')) {
+          response = `Today’s date is ${new Date().toLocaleDateString()}.`;
+        } else {
+          for (const keyword in siteMap) {
+            if (lower.includes(keyword)) {
+              pendingRedirect = siteMap[keyword];
+              response = `Opening ${keyword}.`;
+              redirectBtn.style.display = 'inline-block';
+              break;
+            }
+          }
+          if (!response && (lower.includes('hello') || lower.includes('hi'))) {
+            response = 'Hello there! How can I help you today?';
+          } else if (!response) {
+            response = 'I did not understand that. Please try again.';
+          }
+        }
+
+        speak(response);
+        logHistory(command, response);
+      }
+
+      redirectBtn.addEventListener('click', () => {
+        if (pendingRedirect) {
+          window.open(pendingRedirect, '_blank');
+          redirectBtn.style.display = 'none';
+          pendingRedirect = null;
+        }
+      });
+
+    } else {
+      userInput.textContent = 'User: Speech Recognition or Synthesis not supported.';
+      assistantOutput.textContent = 'Assistant: Please use a modern browser like Chrome.';
+    }
+  </script>
+</body>
+</html>
