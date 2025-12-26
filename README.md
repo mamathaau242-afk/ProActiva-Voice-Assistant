@@ -20,8 +20,6 @@ Dynamic UI
 
 Tech Stack
 
-Technology & Purpose
-
 -HTML	    --->           Structure of the web application.
 -CSS	    --->           Styling, animations, glowing buttons.
 -JavaScript	 --->        Core logic, voice recognition & synthesis.
