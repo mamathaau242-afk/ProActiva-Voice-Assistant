@@ -19,7 +19,6 @@ Dynamic UI
  -Theme toggle (light/dark mode) for visual comfort.
 
 Tech Stack
-
 Technology & Purpose
 
 -HTML	    --->           Structure of the web application.
