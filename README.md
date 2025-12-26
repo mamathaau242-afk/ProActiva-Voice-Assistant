@@ -20,13 +20,13 @@ Dynamic UI
 
 Tech Stack
 
--HTML	    --->           Structure of the web application.
--CSS	    --->           Styling, animations, glowing buttons.
--JavaScript	 --->        Core logic, voice recognition & synthesis.
--Web Speech API	 --->    SpeechRecognition & SpeechSynthesis.
--Node.js	   --->        Backend runtime.
--SQLite	      --->       Database for storing interaction history.
--Fetch & Blob	 --->      Data transfer and history download.
+HTML	    --->           Structure of the web application.
+CSS	    --->           Styling, animations, glowing buttons.
+JavaScript	 --->        Core logic, voice recognition & synthesis.
+Web Speech API	 --->    SpeechRecognition & SpeechSynthesis.
+Node.js	   --->        Backend runtime.
+SQLite	      --->       Database for storing interaction history.
+Fetch & Blob	 --->      Data transfer and history download.
 
 Project Modules
 
